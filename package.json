@@ -1,0 +1,19 @@
+{
+  "name": "studio-backend",
+  "version": "1.0.0",
+  "description": "A Node.js Backend for a design studio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev" : "node index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^6.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
