@@ -1,7 +1,3 @@
-const express = require('express');
-const router = express.Router();
-const { verifySignUp } = require("../middleware");
-const controller = require("../controllers/auth.controller");
 const config = require("../config/auth.config");
 const db = require("../models");
 const User = db.user;
@@ -9,35 +5,25 @@ const User = db.user;
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 
-router.get('/', (req, res) => {
-  res.send("Initial Setup for Backend")
-})
+exports.signup = (req, res) => {
+  const user = new User({
+    username: req.body.username,
+    email: req.body.email,
+    password: bcrypt.hashSync(req.body.password, 8),
+    role: "client"
+  });
 
+  user.save((err, user) => {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+    res.send({ message: "User was registered successfully!" });
 
-router.post('/api/auth/signup', [
-  verifySignUp.checkDuplicateUsernameOrEmail
-],
-  (req, res) => {
-    console.log(req.body.password)
-    const user = new User({
-      username: req.body.username,
-      email: req.body.email,
-      password: bcrypt.hashSync(req.body.password, 8),
-      role: "client"
-    });
+  });
+};
 
-    user.save((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
-      }
-      res.send({ message: "User was registered successfully!" });
-
-    });
-  }
-)
-
-router.post('/api/auth/signin', (req, res) => {
+exports.signin = (req, res) => {
   User.findOne({
     username: req.body.username
   })
@@ -75,8 +61,4 @@ router.post('/api/auth/signin', (req, res) => {
         accessToken: token
       });
     });
-})
-
-
-
-module.exports = router;
+};
