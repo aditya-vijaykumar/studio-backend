@@ -66,56 +66,62 @@ io.use((socket, next) => {
   next();
 });
 
-var theAdmin = null
+var admins = 0;
+const adminsList = []
 const globalClients = []
 io.on('connection', (socket) => {
   console.log(`A User named ${socket.username} is connected`)
 
+  const clientList = [];
+
   if (socket.role == "admin") {
-    theAdmin = {
-      userID: socket.id,
-      username: socket.username,
-      role: socket.role
+    //Scenario: Client is connected, a new admin has just joined
+    if (admins < 1) {
+      let theAdmin = {
+        userID: socket.id,
+        username: socket.username,
+        role: socket.role
+      }
+      //All except the newly joined admin
+      socket.broadcast.emit("admin is now online", {
+        adminOnline: true,
+        admin: theAdmin
+      });
     }
-    socket.broadcast.emit("admin is now online", {
-      adminOnline: true,
-      admin: theAdmin
-    });
+    admins++
+    // only admin requires the client list
+    for (let [id, socket] of io.of("/").sockets) {
+      if (socket.role == "client")
+        clientList.push({
+          userID: id,
+          username: socket.username,
+          role: socket.role
+        });
+    }
     //Send to the new admin
-    console.log(globalClients)
-    socket.emit("clientListForAdmin", globalClients)
+    socket.to(socket.id).emit("clientListForAdmin", clientList)
   } else {
-    let newClientJoined = {
+    socket.emit("new client", {
       userID: socket.id,
       username: socket.username,
       role: socket.role,
-      hasNewMessages: false,
       messages: [],
-    }
-    if (globalClients.length < 1) {
-      globalClients.push(newClientJoined)
-      console.log('pushed the clients')
-      socket.broadcast.emit("new-client", newClientJoined)
+    })
 
-    } else {
-      let boolFlag = false
-      for (var i = 0; i < globalClients.length; i++) {
-        if (globalClients[i].username == newClientJoined.username) {
-          globalClients[i].userID = newClientJoined.userID
-          boolFlag = true
+    if (admins > 0) {
+      let theAdmin = null
+      for (let [id, socket] of io.of("/").sockets) {
+        if (socket.role == "admin") {
+          theAdmin = {
+            userID: id,
+            username: socket.username,
+            role: socket.role
+          }
           break
         }
       }
-      if (!boolFlag) {
-        globalClients.push(newClientJoined)
-        console.log('pushed the clients')
-        socket.broadcast.emit("new-client", newClientJoined)
-      }
-    }
-    //To Alert the client about the admin
-    if (theAdmin != null) {
       //Send to the new client
-      socket.emit('adminAvailable', { adminOnline: true, admin: theAdmin })
+      socket.to(socket.id).emit('adminAvailable', { adminOnline: true, admin: theAdmin })
     }
   }
 
@@ -127,20 +133,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log(`A User named ${socket.username} is disconnected`)
+    console.log('A User is disconnected')
 
     if (socket.role == "admin") {
-      socket.broadcast.emit("adminUnavailable", {
-        adminOnline: false
-      });
-      theAdmin = null
-    } else {
-      for (var i = 0; i < globalClients.length; i++) {
-        if (globalClients[i].username == socket.username) {
-          globalClients.splice(i, 1)
-        }
+      admins--
+      if (admins < 1) {
+        socket.broadcast.emit("adminUnavailable", {
+          adminOnline: false,
+          adminID: socket.id
+        });
       }
-      socket.broadcast.emit("client-left", {
+    } else {
+      socket.emit("client left", {
         userID: socket.id,
         username: socket.username,
       })
