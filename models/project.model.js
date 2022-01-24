@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const Project = mongoose.model(
-  "Project",
+  "Projects",
   new mongoose.Schema({
-    c_email: String,
+    c_id: String,
     project_title: String,
     image: String,
     summary: String,

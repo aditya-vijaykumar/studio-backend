@@ -3,9 +3,10 @@ const mongoose = require("mongoose");
 const Payment = mongoose.model(
   "Payment",
   new mongoose.Schema({
-    c_email: String,
+    c_id: String,
     status: Boolean,
     paid: Boolean,
+    project_title: String,
     service: String,
     amount_due: Number,
     amount_paid: Number,
