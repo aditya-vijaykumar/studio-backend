@@ -29,6 +29,8 @@ app.use(function (req, res, next) {
 
 app.use('/', require('./routes/index.js'));
 app.use('/api', require('./routes/api.js'));
+app.use('/api/admin', require('./routes/admin.js'));
+app.use('/api/client', require('./routes/client.js'));
 
 
 const db = require("./models");
