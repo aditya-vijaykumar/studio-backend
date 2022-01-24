@@ -26,7 +26,7 @@ router.get('/get-client/:id', [authJwt.verifyToken, authJwt.isAdmin], (req, res)
     .then((user) => {
       res.status(200).send({
         client: user,
-        email: req.params.email
+        cid: req.params.id
       });
     })
     .catch((err) => {
@@ -39,7 +39,7 @@ router.get('/project/:id', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =>
   Project.findById(req.params.id)
     .then((project) => {
       res.status(200).send({
-        projec: project,
+        project: project,
         id: req.params.id
       });
     })
@@ -250,9 +250,9 @@ router.post('/project/update-specifics/:id', [authJwt.verifyToken, authJwt.isAdm
 //Update Project Details and mark as complete
 router.post('/project/mark-complete/:id', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
   const active_status = false
-
+  const complete_date = req.body.complete_date
   //Update
-  const updates = { active_status }
+  const updates = { active_status, complete_date }
   Project.findByIdAndUpdate(req.params.id, updates)
     .then((projectUpdated) => {
       res.status(200).send({
@@ -267,7 +267,7 @@ router.post('/project/mark-complete/:id', [authJwt.verifyToken, authJwt.isAdmin]
 })
 
 //Create new client Payment
-router.post('/new-project', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
+router.post('/new-payment', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
   const newProject = new Project({
     c_id: req.body.cid,
     status: false,
@@ -287,6 +287,61 @@ router.post('/new-project', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =
     })
     .catch((err) => {
       res.status(500).send({ message: err });
+    })
+})
+
+//Register a new client
+router.post('/new-client', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
+  //Check if there are any accounts registered with the same username
+  User.findOne({ username: req.body.username })
+    .then(user => {
+      if (user) {
+        res.status(400).send({ message: "Failed! Username is already in use!" });
+        return;
+      }
+      //Check if there are any accounts with the same email
+      User.findOne({ email: req.body.email })
+        .then(acc => {
+          if (acc) {
+            res.status(400).send({ message: "Failed! Email is already in use!" });
+            return;
+          }
+
+          //No matches, so we can sign up the user
+          const userAcc = new User({
+            username: req.body.username,
+            email: req.body.email,
+            password: bcrypt.hashSync(req.body.password, 8),
+            role: "client",
+            address: req.body.address,
+            contact: req.body.contact,
+            industry: req.body.industry,
+            name: req.body.name,
+            photo: req.body.photo,
+            poc: req.body.poc,
+            since: req.body.since
+          });
+
+          userAcc.save((err, user) => {
+            if (err) {
+              res.status(500).send({ message: err });
+              return;
+            }
+            res.send({ message: "User was registered successfully!" });
+          });
+        })
+        .catch(error => {
+          if (error) {
+            res.status(500).send({ message: err });
+            return;
+          }
+        })
+    })
+    .catch(err => {
+      if (err) {
+        res.status(500).send({ message: err });
+        return;
+      }
     })
 })
 
