@@ -74,6 +74,7 @@ router.get('/payments', [authJwt.verifyToken, authJwt.isClient], (req, res) => {
     .then((paymentsDue) => {
       Payment.find({ paid: true, c_id: req.userId })
         .then((paymentsMade) => {
+          console.log(paymentsDue)
           res.status(200).send({
             id: req.userId,
             paymentsDue: paymentsDue ?? [],
@@ -112,7 +113,7 @@ router.post('/new-project', [authJwt.verifyToken, authJwt.isClient], (req, res) 
     summary: req.body.summary,
     service_type: req.body.service_type,
     launch_date: req.body.launch_date,
-    complete_date: req.body.complete_date,
+    complete_date: null,
     prompts: [],
     drafts: [],
     finalized: [],
@@ -161,6 +162,57 @@ router.post('/new-prompt/:id', [authJwt.verifyToken, authJwt.isClient], (req, re
         .catch((err) => {
           res.status(500).send({ message: err });
         })
+    })
+    .catch((err) => {
+      res.status(500).send({ message: err });
+    })
+})
+
+//Delete a Prompt 
+router.post('/delete-prompt/:id/:pid', [authJwt.verifyToken, authJwt.isClient], (req, res) => {
+  Project.findById(req.params.id)
+    .then((project) => {
+      //Delete the object
+      const prompts = project.prompts
+      const i = req.params.pid - 1
+      prompts.splice(i, 1)
+      console.log('Spliced')
+      console.log(prompts)
+      //Add and update
+      const updates = { prompts }
+      Project.findByIdAndUpdate(req.params.id, updates)
+        .then((projectUpdated) => {
+          res.status(200).send({
+            p_id: req.params.id,
+            message: "Prompt successfully deleted!",
+            projectUpdated
+          });
+        })
+        .catch((err) => {
+          res.status(500).send({ message: err });
+        })
+    })
+    .catch((err) => {
+      res.status(500).send({ message: err });
+    })
+})
+
+//Complete a Payment
+router.post('/complete-payment/:id', [authJwt.verifyToken, authJwt.isClient], (req, res) => {
+  const status = true
+  const paid = true
+  const amount_paid = req.body.amount_paid
+  const ref_id = req.body.ref_id
+  const payment_date = req.body.payment_date
+  //Add and update
+  const updates = { status, paid, amount_paid, ref_id, payment_date }
+  Payment.findByIdAndUpdate(req.params.id, updates)
+    .then((paymentUpdated) => {
+      res.status(200).send({
+        p_id: req.params.id,
+        message: "Payment successfully updated!",
+        paymentUpdated
+      });
     })
     .catch((err) => {
       res.status(500).send({ message: err });

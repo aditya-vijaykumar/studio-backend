@@ -42,7 +42,7 @@ router.post('/auth/signup', (req, res) => {
         })
         .catch(error => {
           if (error) {
-            res.status(500).send({ message: err });
+            res.status(500).send({ message: error });
             return;
           }
         })

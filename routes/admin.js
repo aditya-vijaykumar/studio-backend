@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require("bcryptjs");
 const { authJwt } = require("../middleware");
 const db = require("../models");
 const User = db.user;
 const Project = db.project;
 const Payment = db.payment;
+
 
 //Fetch All client profiles
 router.get('/all-clients', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
@@ -268,7 +270,7 @@ router.post('/project/mark-complete/:id', [authJwt.verifyToken, authJwt.isAdmin]
 
 //Create new client Payment
 router.post('/new-payment', [authJwt.verifyToken, authJwt.isAdmin], (req, res) => {
-  const newProject = new Project({
+  const newPayment = new Payment({
     c_id: req.body.cid,
     status: false,
     paid: false,
@@ -281,8 +283,8 @@ router.post('/new-payment', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =
     ref_id: "",
     p_id: req.body.pid,
   })
-  return newProject.save()
-    .then((proj) => {
+  return newPayment.save()
+    .then((payment) => {
       res.status(200).send({ message: "New Payment was created successfully!" });
     })
     .catch((err) => {
@@ -301,7 +303,7 @@ router.post('/new-client', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =>
       }
       //Check if there are any accounts with the same email
       User.findOne({ email: req.body.email })
-        .then(acc => {
+        .then((acc) => {
           if (acc) {
             res.status(400).send({ message: "Failed! Email is already in use!" });
             return;
@@ -311,7 +313,7 @@ router.post('/new-client', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =>
           const userAcc = new User({
             username: req.body.username,
             email: req.body.email,
-            password: bcrypt.hashSync(req.body.password, 8),
+            password: bcrypt.hashSync("abc123456", 8),
             role: "client",
             address: req.body.address,
             contact: req.body.contact,
@@ -327,18 +329,20 @@ router.post('/new-client', [authJwt.verifyToken, authJwt.isAdmin], (req, res) =>
               res.status(500).send({ message: err });
               return;
             }
-            res.send({ message: "User was registered successfully!" });
+            res.status(200).send({ message: "User was registered successfully!" });
           });
         })
         .catch(error => {
           if (error) {
-            res.status(500).send({ message: err });
+            console.error(error)
+            res.status(500).send({ message: error });
             return;
           }
         })
     })
     .catch(err => {
       if (err) {
+        console.error(err)
         res.status(500).send({ message: err });
         return;
       }
